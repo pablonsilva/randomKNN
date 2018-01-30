@@ -1,2 +1,2 @@
 # randomKNN
-A weka implementation of the RandomKNN algorithm.
+A WEKA's implementation of the RandomKNN algorithm.
