@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 /**
- * How do RandomKNN work?
+ * How does RandomKNN work?
  * 1 - A collection of r different kNN classifier is generated, each one takes a random subset
  * of the input variables.
  * 2 - Each KNN classifier classifies a test point by its majority, or weighted majority class,
@@ -19,12 +19,20 @@ import java.util.Random;
  */
 public class RandomKNN extends AbstractClassifier {
 
+    private Random _rand;
     private IBk[] _knn_collection;
     private ArrayList<int[]> _ind_array_collection; // we need this in the distributionForInstance method,
     //we have to remove features from an unseen instance to make a classification properly.
 
     public RandomKNN(int r, int k)
     {
+        this(r,k,new Random(1));
+    }
+
+    public RandomKNN(int r, int k, Random rand)
+    {
+        _rand = rand;
+        _ind_array_collection = new ArrayList<>();
         _knn_collection = new IBk[r];
         for(int i = 0; i < _knn_collection.length;i++) {
             _knn_collection[i] = new IBk(k);
@@ -49,18 +57,24 @@ public class RandomKNN extends AbstractClassifier {
         double[] dist_total = new double[instance.numClasses()];
 
         for (int i = 0; i < _knn_collection.length; i++){
-            Instances dataAux = new Instances(instance.dataset());
+            Instances dataAux = new Instances(instance.dataset(),0);
             dataAux.clear();
             dataAux.add(instance);
 
             Instances dataRmv = arrayToInstances(_ind_array_collection.get(i),dataAux);
-            double[] dist = _knn_collection[i].distributionForInstance(dataRmv.firstInstance());
+            //double[] dist = _knn_collection[i].distributionForInstance(dataRmv.firstInstance());
 
-            for( int h = 0 ; h < dist.length; h++)
-            {
-                dist_total[h] = dist[h] / (double)_knn_collection.length;
-            }
+//            for( int h = 0 ; h < dist.length; h++)
+//            {
+//                dist_total[h] += dist[h];
+//            }
+
+            dist_total[(int)_knn_collection[i].classifyInstance(dataRmv.firstInstance())] += 1.0/_knn_collection.length;
         }
+
+//        for( int h = 0 ; h < dist_total.length; h++)
+//            dist_total[h] /= (double)_knn_collection.length;
+
 
         return dist_total;
     }
@@ -71,10 +85,11 @@ public class RandomKNN extends AbstractClassifier {
         Remove rmv = null;
         Instances fData = null;
         try {
+            // These methods must be called exactly in this order.
             rmv = new Remove();
-            rmv.setInputFormat(data);
             rmv.setAttributeIndicesArray(featuresToKeep);
             rmv.setInvertSelection(true);
+            rmv.setInputFormat(data);
 
             fData  = Filter.useFilter(newData,rmv);
         } catch (Exception e)
@@ -86,16 +101,11 @@ public class RandomKNN extends AbstractClassifier {
 
 
     private int[] randomSubsetOfFeatures(Instances data) {
-        // copy dataset
-        Instances newData = new Instances(data);
-
-        Random r = new Random(1);
-
         // array with selected features
         boolean[] featuresSelected = new boolean[data.numAttributes() - 1];
         int count_selected_features = 0;
         for (int i = 0; i < data.numAttributes() - 1; i++) {
-            if (r.nextDouble() > 0.5) {
+            if (_rand.nextDouble() > 0.5) {
                 featuresSelected[i] = true;
                 count_selected_features++;
             }
@@ -114,6 +124,5 @@ public class RandomKNN extends AbstractClassifier {
         //save the class attribute
         featuresToKeep[featuresToKeep.length-1] = data.classIndex();
         return  featuresToKeep;
-
     }
 }
