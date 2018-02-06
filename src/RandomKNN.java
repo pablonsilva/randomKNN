@@ -57,7 +57,7 @@ public class RandomKNN extends AbstractClassifier {
         double[] dist_total = new double[instance.numClasses()];
 
         for (int i = 0; i < _knn_collection.length; i++){
-            Instances dataAux = new Instances(instance.dataset());
+            Instances dataAux = new Instances(instance.dataset(),0);
             dataAux.clear();
             dataAux.add(instance);
 
